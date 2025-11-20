@@ -20,6 +20,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
   bool _obscurePassword = true;
   bool _sendingCode = false;
   bool _resetting = false;
+  String? _resetToken;
 
   @override
   Widget build(BuildContext context) {
@@ -226,21 +227,21 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_otpController.text.length == 6) {
-                      setState(() {
-                        _currentStep = 2;
-                      });
-                    }
-                  },
+                  onPressed: _sendingCode ? null : _verifyOTP,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     padding: const EdgeInsets.all(16),
                   ),
-                  child: const Text(
-                    'Verify',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  child: _sendingCode
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Verify',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ),
             ],
@@ -248,13 +249,9 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
           const SizedBox(height: 16),
           Center(
             child: TextButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Code resent'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+              onPressed: _sendingCode ? null : () {
+                _otpController.clear();
+                _sendResetEmail();
               },
               child: const Text(
                 'Resend Code',
@@ -381,14 +378,15 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
     try {
       await context
           .read<SessionManager>()
-          .requestPasswordReset(_emailController.text.trim());
+          .sendOTP(_emailController.text.trim());
       if (!mounted) return;
       setState(() {
         _currentStep = 1;
+        _resetToken = null; // Reset token when sending new OTP
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Verification link sent if the email exists'),
+          content: Text('Verification code sent if the email exists'),
           backgroundColor: Colors.green,
         ),
       );
@@ -407,7 +405,55 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
     }
   }
 
+  Future<void> _verifyOTP() async {
+    if (_otpController.text.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a 6-digit verification code'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    setState(() => _sendingCode = true);
+    try {
+      final token = await context.read<SessionManager>().verifyOTP(
+            _emailController.text.trim(),
+            _otpController.text.trim(),
+          );
+      if (!mounted) return;
+      if (token.isEmpty) {
+        throw Exception('Failed to verify OTP');
+      }
+      setState(() {
+        _resetToken = token;
+        _currentStep = 2;
+      });
+    } catch (err) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(err.toString().replaceAll('ApiException(', '').replaceAll(')', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _sendingCode = false);
+      }
+    }
+  }
+
   Future<void> _resetPassword() async {
+    if (_resetToken == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please verify OTP first'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     final newPassword = _newPasswordController.text.trim();
     if (newPassword.isEmpty ||
         newPassword != _confirmPasswordController.text.trim()) {
@@ -423,7 +469,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
     try {
       await context.read<SessionManager>().resetPassword(
             email: _emailController.text.trim(),
-            token: _otpController.text.trim(),
+            token: _resetToken!,
             newPassword: newPassword,
           );
       if (!mounted) return;
@@ -444,7 +490,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(err.toString()),
+          content: Text(err.toString().replaceAll('ApiException(', '').replaceAll(')', '')),
           backgroundColor: Colors.red,
         ),
       );

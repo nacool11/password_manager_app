@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const validator = require('validator');
 
 const User = require('../models/User');
-const { createTransporter, sendResetEmail } = require('../utils/mail');
+const { createTransporter, sendResetEmail, sendOTPEmail } = require('../utils/mail');
 
 const transporter = createTransporter(process.env);
 
@@ -88,6 +88,72 @@ router.post('/forgot-password', async (req, res) => {
     await sendResetEmail(transporter, process.env.FROM_EMAIL || 'no-reply@example.com', user.email, resetUrl);
 
     res.json({ message: 'If the email exists, a reset link was sent' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Send OTP for password reset
+router.post('/send-otp', async (req, res) => {
+  const { email } = req.body;
+  if (!email || !validator.isEmail(email)) return res.status(400).json({ message: 'Valid email required' });
+  
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      // don't reveal existence
+      return res.json({ message: 'If the email exists, a verification code was sent' });
+    }
+
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = Date.now() + (10 * 60 * 1000); // 10 minutes
+
+    user.otpCode = otpCode;
+    user.otpExpires = new Date(otpExpires);
+    await user.save();
+
+    // Send OTP via email
+    await sendOTPEmail(transporter, process.env.FROM_EMAIL || 'no-reply@example.com', user.email, otpCode);
+
+    res.json({ message: 'If the email exists, a verification code was sent' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Verify OTP
+router.post('/verify-otp', async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) return res.status(400).json({ message: 'Email and OTP required' });
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: 'Invalid email or OTP' });
+
+    // Check if OTP exists, matches, and hasn't expired
+    if (!user.otpCode || user.otpCode !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    if (!user.otpExpires || user.otpExpires < new Date()) {
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    // OTP is valid - generate reset token for password reset
+    const token = crypto.randomBytes(20).toString('hex');
+    const expires = Date.now() + (Number(process.env.RESET_TOKEN_EXPIRES_MIN || 30) * 60 * 1000);
+
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = new Date(expires);
+    // Clear OTP after successful verification
+    user.otpCode = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    res.json({ message: 'OTP verified successfully', token });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });

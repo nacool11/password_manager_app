@@ -227,6 +227,25 @@ class SessionManager extends ChangeNotifier {
     );
   }
 
+  Future<String> sendOTP(String email) async {
+    final response = await _apiClient.post(
+      '/auth/send-otp',
+      body: {'email': email},
+    );
+    return response['message']?.toString() ?? 'OTP sent';
+  }
+
+  Future<String> verifyOTP(String email, String otp) async {
+    final response = await _apiClient.post(
+      '/auth/verify-otp',
+      body: {
+        'email': email,
+        'otp': otp,
+      },
+    );
+    return response['token']?.toString() ?? '';
+  }
+
   Future<void> resetPassword({
     required String email,
     required String token,
@@ -240,6 +259,54 @@ class SessionManager extends ChangeNotifier {
         'newPassword': newPassword,
       },
     );
+  }
+
+  Future<VaultItem> getItem(String id) async {
+    if (!isAuthenticated) throw const ApiException('Not authenticated');
+    final response = await _apiClient.get('/items/$id', token: _token);
+    return VaultItem.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<void> updateItem({
+    required String id,
+    String? title,
+    String? subtitle,
+    String? type,
+    Map<String, dynamic>? data,
+    String? categoryId,
+  }) async {
+    if (!isAuthenticated) return;
+    final body = <String, dynamic>{};
+    if (title != null) body['title'] = title;
+    if (subtitle != null) body['subtitle'] = subtitle;
+    if (type != null) body['type'] = type;
+    if (data != null) body['data'] = data;
+    if (categoryId != null) body['category'] = categoryId;
+    
+    await _apiClient.put('/items/$id', token: _token, body: body);
+    await refreshVaultData();
+  }
+
+  Future<void> updateCategory({
+    required String id,
+    String? name,
+    String? icon,
+    String? color,
+  }) async {
+    if (!isAuthenticated) return;
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    if (icon != null) body['icon'] = icon;
+    if (color != null) body['color'] = color;
+    
+    await _apiClient.put('/categories/$id', token: _token, body: body);
+    await refreshVaultData();
+  }
+
+  Future<void> deleteCategory(String id) async {
+    if (!isAuthenticated) return;
+    await _apiClient.delete('/categories/$id', token: _token);
+    await refreshVaultData();
   }
 
   Future<void> logout() async {

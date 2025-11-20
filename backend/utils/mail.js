@@ -25,4 +25,16 @@ const sendResetEmail = async (transporter, from, to, resetUrl) => {
   });
 };
 
-module.exports = { createTransporter, sendResetEmail };
+const sendOTPEmail = async (transporter, from, to, otpCode) => {
+  if (!transporter) return;
+  await transporter.sendMail({
+    from,
+    to,
+    subject: 'Vault - Verification Code',
+    html: `<p>Your verification code is: <strong>${otpCode}</strong></p>
+           <p>This code will expire in 10 minutes.</p>
+           <p>If you didn't request this code, please ignore this email.</p>`,
+  });
+};
+
+module.exports = { createTransporter, sendResetEmail, sendOTPEmail };
