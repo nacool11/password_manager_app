@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const itemRoutes = require('./routes/items');
 const categoryRoutes = require('./routes/categories');
 const settingsRoutes = require('./routes/settings');
+const auditRoutes = require('./routes/audit');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/audit', auditRoutes);
 
 // error handler
 app.use((err, req, res, next) => {
