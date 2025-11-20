@@ -8,8 +8,15 @@ const SettingsSchema = new mongoose.Schema({
 const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true },
-  resetPasswordToken: { type: String },
-  resetPasswordExpires: { type: Date },
+
+  // OTP fields for password reset (6-digit numeric)
+  resetOTP: { type: String, default: undefined },
+  resetOTPExpires: { type: Date, default: undefined },
+
+  // legacy possible fields kept optional (if you used tokens earlier)
+  resetPasswordToken: { type: String, default: undefined },
+  resetPasswordExpires: { type: Date, default: undefined },
+
   settings: { type: SettingsSchema, default: () => ({}) },
 }, { timestamps: true });
 

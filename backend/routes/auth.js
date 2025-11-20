@@ -6,9 +6,16 @@ const crypto = require('crypto');
 const validator = require('validator');
 
 const User = require('../models/User');
-const { createTransporter, sendResetEmail } = require('../utils/mail');
+const { createTransporter, sendResetEmail, sendOTPEmail } = require('../utils/mail');
 
 const transporter = createTransporter(process.env);
+
+// Helper: generate 6-digit numeric OTP as string
+function generateOtp() {
+  // generate number 0..999999 and pad left with zeros
+  const n = Math.floor(Math.random() * 1000000);
+  return String(n).padStart(6, '0');
+}
 
 // Register
 router.post('/register', async (req, res) => {
@@ -54,54 +61,85 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Forgot password -> generates reset token and emails link (if transporter configured)
+/*
+  NEW FLOW - OTP based reset
+  POST /auth/forgot-password  -> generate OTP & email it
+  POST /auth/reset-password   -> accept email + otp + newPassword
+*/
+
+// Forgot password (generate OTP)
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
   if (!email || !validator.isEmail(email)) return res.status(400).json({ message: 'Valid email required' });
+
   try {
     const user = await User.findOne({ email });
+    // Always respond success message to avoid email enumeration
+    const genericMsg = { message: 'If the email exists, a reset code was sent' };
+
     if (!user) {
-      // don't reveal existence
-      return res.json({ message: 'If the email exists, a reset link was sent' });
+      // still respond success
+      return res.json(genericMsg);
     }
 
-    const token = crypto.randomBytes(20).toString('hex');
-    const expires = Date.now() + (Number(process.env.RESET_TOKEN_EXPIRES_MIN || 30) * 60 * 1000);
+    // Generate 6-digit OTP
+    const otp = generateOtp();
+    const expiresMs = Number(process.env.RESET_TOKEN_EXPIRES_MIN || 10) * 60 * 1000;
+    const expiresAt = new Date(Date.now() + expiresMs);
 
-    user.resetPasswordToken = token;
-    user.resetPasswordExpires = new Date(expires);
+    user.resetOTP = otp;
+    user.resetOTPExpires = expiresAt;
+    // clear legacy token fields (safe)
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
     await user.save();
 
-    const resetUrl = `${req.get('origin') || req.get('host')}/reset-password?token=${token}&email=${encodeURIComponent(user.email)}`;
+    // Send OTP via email (if transporter configured)
+    try {
+      await sendOTPEmail(transporter, process.env.FROM_EMAIL || process.env.SMTP_USER, user.email, otp, Number(process.env.RESET_TOKEN_EXPIRES_MIN || 10));
+    } catch (mailErr) {
+      console.error('Failed to send OTP email:', mailErr);
+      // Do not reveal this error to client; still return generic message
+    }
 
-    // send email if transporter configured
-    await sendResetEmail(transporter, process.env.FROM_EMAIL || 'no-reply@example.com', user.email, resetUrl);
-
-    res.json({ message: 'If the email exists, a reset link was sent' });
+    return res.json(genericMsg);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Reset password
+// Reset password using OTP
 router.post('/reset-password', async (req, res) => {
-  const { email, token, newPassword } = req.body;
-  if (!email || !token || !newPassword) return res.status(400).json({ message: 'Missing fields' });
+  const { email, otp, newPassword } = req.body;
+  if (!email || !validator.isEmail(email) || !otp || !newPassword) {
+    return res.status(400).json({ message: 'Missing fields' });
+  }
 
   try {
     const user = await User.findOne({
       email,
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: new Date() },
+      resetOTP: otp,
+      resetOTPExpires: { $gt: new Date() },
     });
-    if (!user) return res.status(400).json({ message: 'Invalid or expired token' });
 
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired code' });
+    }
+
+    // Update password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
+
+    // clear OTP and expirations
+    user.resetOTP = undefined;
+    user.resetOTPExpires = undefined;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
+
     await user.save();
+
     res.json({ message: 'Password reset successful' });
   } catch (err) {
     console.error(err);
