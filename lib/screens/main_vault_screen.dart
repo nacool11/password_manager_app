@@ -55,10 +55,10 @@ class _MainVaultScreenState extends State<MainVaultScreen> {
             onChanged: settingsBusy
                 ? null
                 : (value) {
-                    final newSettings =
-                        session.settings.copyWith(largeFont: value);
-                    session.updateSettings(newSettings);
-                  },
+              final newSettings =
+              session.settings.copyWith(largeFont: value);
+              session.updateSettings(newSettings);
+            },
             activeColor: Colors.white,
           ),
           IconButton(
@@ -118,10 +118,10 @@ class _MainVaultScreenState extends State<MainVaultScreen> {
                       : () => session.refreshVaultData(),
                   icon: session.vaultLoading
                       ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                       : const Icon(Icons.refresh),
                 ),
               ],
@@ -132,85 +132,85 @@ class _MainVaultScreenState extends State<MainVaultScreen> {
                 onRefresh: () => session.refreshVaultData(),
                 child: filteredItems.isEmpty
                     ? ListView(
-                        children: const [
-                          SizedBox(height: 120),
-                          Center(
-                            child: Text('No items yet, add one to get started'),
-                          ),
-                        ],
-                      )
+                  children: const [
+                    SizedBox(height: 120),
+                    Center(
+                      child: Text('No items yet, add one to get started'),
+                    ),
+                  ],
+                )
                     : ListView.builder(
-                        padding: const EdgeInsets.only(top: 4),
-                        itemCount: filteredItems.length,
-                        itemBuilder: (context, index) {
-                          final item = filteredItems[index];
-                          final isCard = item.isCard;
-                          final subtitle = _itemSubtitle(item);
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: isCard
-                                    ? Colors.green.shade50
-                                    : Colors.transparent,
-                              ),
-                            ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              leading: CircleAvatar(
-                                backgroundColor: isCard
-                                    ? Colors.green.shade100
-                                    : Colors.indigo.shade100,
-                                child: Icon(
-                                  isCard ? Icons.credit_card : Icons.key,
-                                  color: isCard ? Colors.green : Colors.indigo,
-                                ),
-                              ),
-                              title: Text(
-                                item.title,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: largeFont ? 16 : 14,
-                                ),
-                              ),
-                              subtitle: Text(
-                                subtitle,
-                                style: TextStyle(
-                                  fontSize: largeFont ? 14 : 12,
-                                ),
-                              ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.chevron_right),
-                                onPressed: () {
-                                  if (isCard) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            CreditCardDetailScreen(item: item),
-                                      ),
-                                    );
-                                  } else {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            PasswordDetailScreen(item: item),
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                              onLongPress: () => _confirmDelete(item),
-                            ),
-                          );
-                        },
+                  padding: const EdgeInsets.only(top: 4),
+                  itemCount: filteredItems.length,
+                  itemBuilder: (context, index) {
+                    final item = filteredItems[index];
+                    final isCard = item.isCard;
+                    final subtitle = _itemSubtitle(item);
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: isCard
+                              ? Colors.green.shade50
+                              : Colors.transparent,
+                        ),
                       ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        leading: CircleAvatar(
+                          backgroundColor: isCard
+                              ? Colors.green.shade100
+                              : Colors.indigo.shade100,
+                          child: Icon(
+                            isCard ? Icons.credit_card : Icons.key,
+                            color: isCard ? Colors.green : Colors.indigo,
+                          ),
+                        ),
+                        title: Text(
+                          item.title,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: largeFont ? 16 : 14,
+                          ),
+                        ),
+                        subtitle: Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: largeFont ? 14 : 12,
+                          ),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.chevron_right),
+                          onPressed: () {
+                            if (isCard) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      CreditCardDetailScreen(item: item),
+                                ),
+                              );
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      PasswordDetailScreen(item: item),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                        onLongPress: () => _confirmDelete(item),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ],
@@ -234,7 +234,7 @@ class _MainVaultScreenState extends State<MainVaultScreen> {
   String _selectedCategoryTitle(List<CategoryModel> categories) {
     if (_selectedCategoryId == null) return 'All Items';
     final cat = categories.firstWhere(
-      (c) => c.id == _selectedCategoryId,
+          (c) => c.id == _selectedCategoryId,
       orElse: () => CategoryModel(id: '', name: 'All Items'),
     );
     return cat.name;
@@ -256,47 +256,63 @@ class _MainVaultScreenState extends State<MainVaultScreen> {
         'Password';
   }
 
+  // ---------------------------
+  //   FIXED VERSION — NO CRASH
+  // ---------------------------
   void _showAddCategoryDialog() {
     final controller = TextEditingController();
     final session = context.read<SessionManager>();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Category'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Category Name'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add Category'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Category Name'),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              final value = controller.text.trim();
-              if (value.isEmpty) return;
-              try {
-                await session.addCategory(value);
-                if (!mounted) return;
+          actions: [
+            TextButton(
+              onPressed: () {
+                controller.dispose();
                 Navigator.pop(context);
-              } catch (err) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(err.toString()),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    ).then((_) => controller.dispose());
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final value = controller.text.trim();
+                if (value.isEmpty) return;
+
+                controller.dispose();  // dispose early (safe)
+
+                Navigator.pop(context);   // close dialog BEFORE updating provider
+
+                // IMPORTANT: delay the provider update until after dialog pops
+                Future.delayed(Duration(milliseconds: 50), () async {
+                  try {
+                    await session.addCategory(value);
+                  } catch (err) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(err.toString()),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                });
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
   }
+
 
   void _showAddItemSheet() {
     showModalBottomSheet(
@@ -395,7 +411,7 @@ class _VaultDrawer extends StatelessWidget {
                     },
                   ),
                   ...categories.map(
-                    (category) => _CategoryTile(
+                        (category) => _CategoryTile(
                       name: category.name,
                       isSelected: selectedCategory == category.id,
                       largeFont: largeFont,
@@ -467,7 +483,7 @@ class _CategoryTile extends StatelessWidget {
           name,
           style: TextStyle(
             fontWeight:
-                isSelected ? FontWeight.w600 : FontWeight.normal,
+            isSelected ? FontWeight.w600 : FontWeight.normal,
             fontSize: largeFont ? 16 : 14,
           ),
         ),
@@ -528,7 +544,7 @@ class _AddItemFormState extends State<_AddItemForm> {
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Title'),
                 validator: (value) =>
-                    value == null || value.isEmpty ? 'Title required' : null,
+                value == null || value.isEmpty ? 'Title required' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -566,7 +582,7 @@ class _AddItemFormState extends State<_AddItemForm> {
                     child: Text('No category'),
                   ),
                   ...session.categories.map(
-                    (cat) => DropdownMenuItem<String?>(
+                        (cat) => DropdownMenuItem<String?>(
                       value: cat.id,
                       child: Text(cat.name),
                     ),
@@ -584,7 +600,7 @@ class _AddItemFormState extends State<_AddItemForm> {
                 TextFormField(
                   controller: _usernameController,
                   decoration:
-                      const InputDecoration(labelText: 'Username / Email'),
+                  const InputDecoration(labelText: 'Username / Email'),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -601,13 +617,13 @@ class _AddItemFormState extends State<_AddItemForm> {
                 TextFormField(
                   controller: _cardholderController,
                   decoration:
-                      const InputDecoration(labelText: 'Cardholder Name'),
+                  const InputDecoration(labelText: 'Cardholder Name'),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _cardNumberController,
                   decoration:
-                      const InputDecoration(labelText: 'Card Number'),
+                  const InputDecoration(labelText: 'Card Number'),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
@@ -617,7 +633,7 @@ class _AddItemFormState extends State<_AddItemForm> {
                       child: TextFormField(
                         controller: _expiryController,
                         decoration:
-                            const InputDecoration(labelText: 'Expiry (MM/YY)'),
+                        const InputDecoration(labelText: 'Expiry (MM/YY)'),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -650,10 +666,10 @@ class _AddItemFormState extends State<_AddItemForm> {
                           : () => _submit(session),
                       child: _submitting
                           ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                           : const Text('Save'),
                     ),
                   ),
@@ -671,16 +687,16 @@ class _AddItemFormState extends State<_AddItemForm> {
     if (!_formKey.currentState!.validate()) return;
     final data = _type == 'password'
         ? {
-            'username': _usernameController.text.trim(),
-            'password': _passwordController.text.trim(),
-            'url': _urlController.text.trim(),
-          }
+      'username': _usernameController.text.trim(),
+      'password': _passwordController.text.trim(),
+      'url': _urlController.text.trim(),
+    }
         : {
-            'cardholderName': _cardholderController.text.trim(),
-            'cardNumber': _cardNumberController.text.trim(),
-            'expiry': _expiryController.text.trim(),
-            'cvv': _cvvController.text.trim(),
-          };
+      'cardholderName': _cardholderController.text.trim(),
+      'cardNumber': _cardNumberController.text.trim(),
+      'expiry': _expiryController.text.trim(),
+      'cvv': _cvvController.text.trim(),
+    };
     setState(() => _submitting = true);
     try {
       await session.createItem(

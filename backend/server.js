@@ -15,6 +15,12 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json({ limit: '1mb' }));
 
+// Set request timeout - increased to 50 seconds to accommodate slow connections
+app.use((req, res, next) => {
+  req.setTimeout(50000); // 50 second timeout
+  next();
+});
+
 const PORT = process.env.PORT || 4000;
 
 // connect db

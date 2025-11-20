@@ -13,23 +13,33 @@ const transporter = createTransporter(process.env);
 // Register
 router.post('/register', async (req, res) => {
   const { email, password } = req.body;
+  console.log('[Register] Request started for email:', email);
+  
   if (!email || !validator.isEmail(email)) return res.status(400).json({ message: 'Valid email required' });
   if (!password || password.length < 6) return res.status(400).json({ message: 'Password min 6 chars' });
 
   try {
+    console.log('[Register] Checking if email exists...');
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ message: 'Email already registered' });
 
+    console.log('[Register] Email available. Generating salt and hashing password...');
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(password, salt);
 
+    console.log('[Register] Creating user document...');
     user = new User({ email, password: hashed });
+    
+    console.log('[Register] Saving user to database...');
     await user.save();
 
+    console.log('[Register] Generating JWT token...');
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
+    
+    console.log('[Register] Registration successful for email:', email);
     res.json({ token, user: { id: user._id, email: user.email, settings: user.settings } });
   } catch (err) {
-    console.error(err);
+    console.error('[Register] Error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
