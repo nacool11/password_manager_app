@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class VaultItem {
   final String id;
   final String title;
@@ -23,12 +25,29 @@ class VaultItem {
   bool get isPassword => type == 'password' || type == 'login';
 
   factory VaultItem.fromJson(Map<String, dynamic> json) {
+    // Ensure data is properly parsed as Map
+    Map<String, dynamic>? parsedData;
+    if (json['data'] != null) {
+      if (json['data'] is Map) {
+        parsedData = Map<String, dynamic>.from(json['data'] as Map);
+      } else if (json['data'] is String) {
+        // If data comes as string, try to parse it
+        try {
+          parsedData = Map<String, dynamic>.from(
+            jsonDecode(json['data'] as String) as Map,
+          );
+        } catch (e) {
+          parsedData = null;
+        }
+      }
+    }
+
     return VaultItem(
       id: json['_id'] ?? json['id'] ?? '',
       title: json['title'] ?? '',
       subtitle: json['subtitle'],
       type: json['type'] ?? 'password',
-      data: json['data'],
+      data: parsedData,
       categoryId: json['category'] ?? json['categoryId'],
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])

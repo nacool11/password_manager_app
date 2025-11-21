@@ -64,7 +64,12 @@ class SessionManager extends ChangeNotifier {
       // Load items
       final itemsResponse = await ApiService.getItems();
       final itemsList = (itemsResponse['items'] as List?)
-              ?.map((json) => VaultItem.fromJson(json))
+              ?.map((json) {
+                // Debug: Check if data is properly structured
+                // print('Item JSON data type: ${json['data'].runtimeType}');
+                // print('Item JSON data: ${json['data']}');
+                return VaultItem.fromJson(json);
+              })
               .toList() ??
           [];
       _items = itemsList;

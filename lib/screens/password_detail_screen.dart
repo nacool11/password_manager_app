@@ -27,9 +27,22 @@ class _PasswordDetailScreenState extends State<PasswordDetailScreen> {
   
   String get _password {
     if (widget.item?.data != null) {
-      return widget.item!.data!['password']?.toString() ?? 
-             widget.item!.data!['pass']?.toString() ?? 
-             '••••••••';
+      final data = widget.item!.data!;
+      
+      // Debug: Print data structure to see what we're getting
+      // print('Password Detail - Data keys: ${data.keys.toList()}');
+      // print('Password Detail - Data: $data');
+      
+      // Try multiple possible password field names
+      final password = data['password']?.toString() ?? 
+                      data['pass']?.toString() ?? 
+                      data['pwd']?.toString();
+      
+      if (password != null && password.isNotEmpty) {
+        return password;
+      }
+      
+      return '••••••••';
     }
     return '••••••••';
   }
