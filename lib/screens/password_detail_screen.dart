@@ -25,17 +25,10 @@ class _PasswordDetailScreenState extends State<PasswordDetailScreen> {
   final String _url = 'https://google.com';
 
   void _showSecurityDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _SecurityVerificationDialog(
-        onVerified: () {
-          setState(() {
-            _showPassword = true;
-          });
-        },
-      ),
-    );
+    // Removed OTP and master password requirement - just toggle password visibility
+    setState(() {
+      _showPassword = true;
+    });
   }
 
   void _copyToClipboard(String text, String label) {
@@ -95,13 +88,9 @@ class _PasswordDetailScreenState extends State<PasswordDetailScreen> {
               icon: Icons.lock,
               onCopy: () => _copyToClipboard(_password, 'Password'),
               onToggleVisibility: () {
-                if (!_showPassword) {
-                  _showSecurityDialog();
-                } else {
-                  setState(() {
-                    _showPassword = false;
-                  });
-                }
+                setState(() {
+                  _showPassword = !_showPassword;
+                });
               },
               showVisibility: true,
               isVisible: _showPassword,
@@ -161,7 +150,7 @@ class _PasswordDetailScreenState extends State<PasswordDetailScreen> {
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
-                      'Passwords are encrypted and require two-factor authentication to view.',
+                      'Passwords are encrypted and stored securely.',
                       style: TextStyle(fontSize: 13),
                     ),
                   ),
@@ -276,146 +265,6 @@ class _PasswordDetailScreenState extends State<PasswordDetailScreen> {
   }
 }
 
-class _SecurityVerificationDialog extends StatefulWidget {
-  final VoidCallback onVerified;
-
-  const _SecurityVerificationDialog({required this.onVerified});
-
-  @override
-  State<_SecurityVerificationDialog> createState() =>
-      _SecurityVerificationDialogState();
-}
-
-class _SecurityVerificationDialogState
-    extends State<_SecurityVerificationDialog> {
-  final _masterPasswordController = TextEditingController();
-  final _otpController = TextEditingController();
-  int _step = 1;
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text(
-        'Unlock to View',
-        style: TextStyle(color: Color(0xFFD97706)),
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_step == 1) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFFCD34D)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Step 1: Enter Master Password',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFD97706),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _masterPasswordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Master Password',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ] else ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFFCD34D)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Step 2: Enter OTP from Email',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFD97706),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _otpController,
-                      decoration: const InputDecoration(
-                        hintText: '123456',
-                      ),
-                      keyboardType: TextInputType.number,
-                      maxLength: 6,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFD1FAE5),
-                borderRadius: BorderRadius.circular(8),
-                border: Border(
-                  left: BorderSide(
-                    color: Colors.green.shade400,
-                    width: 4,
-                  ),
-                ),
-              ),
-              child: const Text(
-                'The actual saved password is only decrypted and shown after successful two-factor authentication.',
-                style: TextStyle(fontSize: 12),
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            if (_step == 1) {
-              setState(() {
-                _step = 2;
-              });
-            } else {
-              Navigator.pop(context);
-              widget.onVerified();
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFD97706),
-          ),
-          child: Text(_step == 1 ? 'Next' : 'Verify & Show'),
-        ),
-      ],
-    );
-  }
-
-  @override
-  void dispose() {
-    _masterPasswordController.dispose();
-    _otpController.dispose();
-    super.dispose();
-  }
-}
 
 
 // ==========================================

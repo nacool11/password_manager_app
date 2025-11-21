@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
+import '../services/api_service.dart';
 
 class RecoveryScreen extends StatefulWidget {
   const RecoveryScreen({Key? key}) : super(key: key);
@@ -15,6 +16,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -141,15 +143,37 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                if (_emailController.text.isNotEmpty) {
+              onPressed: _isLoading ? null : () async {
+                if (_emailController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter your email'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                setState(() => _isLoading = true);
+                try {
+                  await ApiService.forgotPassword(_emailController.text.trim());
+                  if (!mounted) return;
                   setState(() {
                     _currentStep = 1;
+                    _isLoading = false;
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Verification code sent to your email'),
                       backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  setState(() => _isLoading = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                      backgroundColor: Colors.red,
                     ),
                   );
                 }
@@ -158,10 +182,19 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
                 backgroundColor: Colors.red,
                 padding: const EdgeInsets.all(16),
               ),
-              child: const Text(
-                'Send Code',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Send Code',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
             ),
           ),
         ],
@@ -226,21 +259,57 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_otpController.text.length == 6) {
+                  onPressed: _isLoading ? null : () async {
+                    if (_otpController.text.length != 6) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a valid 6-digit code'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+                    setState(() => _isLoading = true);
+                    try {
+                      // Verify OTP by attempting to reset password with a dummy password
+                      // The backend will verify the OTP and return an error if invalid
+                      // We'll just verify the OTP is valid, then proceed to step 3
+                      // Actually, we should verify OTP separately, but since the backend
+                      // doesn't have a verify-only endpoint, we'll proceed to step 3
+                      // and verify during password reset
+                      if (!mounted) return;
                       setState(() {
                         _currentStep = 2;
+                        _isLoading = false;
                       });
+                    } catch (e) {
+                      if (!mounted) return;
+                      setState(() => _isLoading = false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(e.toString().replaceAll('Exception: ', '')),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
                     }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     padding: const EdgeInsets.all(16),
                   ),
-                  child: const Text(
-                    'Verify',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Verify',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ),
             ],
@@ -248,13 +317,28 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
           const SizedBox(height: 16),
           Center(
             child: TextButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Code resent'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+              onPressed: _isLoading ? null : () async {
+                setState(() => _isLoading = true);
+                try {
+                  await ApiService.forgotPassword(_emailController.text.trim());
+                  if (!mounted) return;
+                  setState(() => _isLoading = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Code resent'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  setState(() => _isLoading = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
               child: const Text(
                 'Resend Code',
@@ -341,9 +425,44 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_newPasswordController.text ==
+                  onPressed: _isLoading ? null : () async {
+                    if (_newPasswordController.text.isEmpty ||
+                        _confirmPasswordController.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter both password fields'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+                    if (_newPasswordController.text !=
                         _confirmPasswordController.text) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Passwords do not match'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+                    if (_newPasswordController.text.length < 6) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Password must be at least 6 characters'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+                    setState(() => _isLoading = true);
+                    try {
+                      await ApiService.resetPassword(
+                        _emailController.text.trim(),
+                        _otpController.text.trim(),
+                        _newPasswordController.text.trim(),
+                      );
+                      if (!mounted) return;
                       Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(
@@ -359,10 +478,12 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
                           backgroundColor: Colors.green,
                         ),
                       );
-                    } else {
+                    } catch (e) {
+                      if (!mounted) return;
+                      setState(() => _isLoading = false);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Passwords do not match'),
+                        SnackBar(
+                          content: Text(e.toString().replaceAll('Exception: ', '')),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -372,10 +493,19 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
                     backgroundColor: Colors.red,
                     padding: const EdgeInsets.all(16),
                   ),
-                  child: const Text(
-                    'Reset & Login',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Reset & Login',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ),
             ],

@@ -1,7 +1,42 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
-class SecurityAuditScreen extends StatelessWidget {
+class SecurityAuditScreen extends StatefulWidget {
   const SecurityAuditScreen({Key? key}) : super(key: key);
+
+  @override
+  State<SecurityAuditScreen> createState() => _SecurityAuditScreenState();
+}
+
+class _SecurityAuditScreenState extends State<SecurityAuditScreen> {
+  bool _isLoading = true;
+  Map<String, dynamic>? _auditData;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAudit();
+  }
+
+  Future<void> _loadAudit() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final data = await ApiService.getAudit();
+      setState(() {
+        _auditData = data['audit'];
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString().replaceAll('Exception: ', '');
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,169 +45,251 @@ class SecurityAuditScreen extends StatelessWidget {
         title: const Text('Security Health Audit'),
         backgroundColor: Colors.blue,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue.shade400, Colors.blue.shade600],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                const Text(
-                  'Overall Security Score',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 150,
-                      height: 150,
-                      child: CircularProgressIndicator(
-                        value: 0.85,
-                        strokeWidth: 12,
-                        backgroundColor: Colors.white.withOpacity(0.3),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Colors.white,
-                        ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+                      const SizedBox(height: 16),
+                      Text(
+                        _error!,
+                        style: const TextStyle(fontSize: 16, color: Colors.red),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    const Column(
-                      children: [
-                        Text(
-                          '85%',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: _loadAudit,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadAudit,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _buildScoreCard(),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Security Issues',
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      if (_auditData != null && _auditData!['issues'] != null)
+                        ...(_auditData!['issues'] as List)
+                            .map((issue) => _buildIssueCardFromData(issue))
+                            .toList(),
+                      if (_auditData == null ||
+                          _auditData!['issues'] == null ||
+                          (_auditData!['issues'] as List).isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.green.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.green.shade700),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Text(
+                                  'No security issues found! Your passwords are secure.',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          'Good',
-                          style: TextStyle(fontSize: 16, color: Colors.white),
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.green.shade200),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'You\'re doing well! Address the issues below to improve.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Security Issues',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          _buildIssueCard(
-            title: '3 Reused Passwords',
-            description:
-                'Using the same password on multiple sites is risky. If one site is compromised, all accounts are at risk.',
-            severity: 'High',
-            severityColor: Colors.red,
-            icon: Icons.loop,
-            items: [
-              'Facebook & Instagram',
-              'Twitter & LinkedIn',
-              'Netflix & Spotify',
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildIssueCard(
-            title: '5 Weak Passwords',
-            description:
-                'Passwords should be long and complex. Use a mix of uppercase, lowercase, numbers, and symbols.',
-            severity: 'Medium',
-            severityColor: Colors.orange,
-            icon: Icons.warning,
-            items: [
-              'Amazon - Only 8 characters',
-              'GitHub - No special characters',
-              'Gmail - Common word',
-              'PayPal - Sequential numbers',
-              'Dropbox - Name-based password',
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildIssueCard(
-            title: '2 Old Passwords',
-            description:
-                'These passwords haven\'t been changed in over a year. Regular updates improve security.',
-            severity: 'Low',
-            severityColor: Colors.yellow.shade700,
-            icon: Icons.access_time,
-            items: ['Bank Account - 14 months old', 'Email - 18 months old'],
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green.shade200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.tips_and_updates, color: Colors.green.shade700),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Security Tips',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.tips_and_updates, color: Colors.green.shade700),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Security Tips',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTip('Use unique passwords for each account'),
+                            _buildTip('Enable two-factor authentication'),
+                            _buildTip('Use the password generator for strong passwords'),
+                            _buildTip('Update passwords regularly'),
+                            _buildTip('Never share your master password'),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: _loadAudit,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Refresh Audit'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          padding: const EdgeInsets.all(16),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                _buildTip('Use unique passwords for each account'),
-                _buildTip('Enable two-factor authentication'),
-                _buildTip('Use the password generator for strong passwords'),
-                _buildTip('Update passwords regularly'),
-                _buildTip('Never share your master password'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.security),
-            label: const Text('Fix Security Issues'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              padding: const EdgeInsets.all(16),
-            ),
+    );
+  }
+
+  Widget _buildScoreCard() {
+    if (_auditData == null) {
+      return const SizedBox.shrink();
+    }
+    final score = _auditData!['scorePercent'] ?? 0;
+    final riskLevel = _auditData!['riskLevel'] ?? 'low';
+    final summary = _auditData!['summary'] ?? {};
+    final totalItems = summary['totalItems'] ?? 0;
+    final flaggedItems = summary['flaggedItems'] ?? 0;
+
+    Color scoreColor;
+    String scoreLabel;
+    if (score >= 70) {
+      scoreColor = Colors.green;
+      scoreLabel = 'Good';
+    } else if (score >= 40) {
+      scoreColor = Colors.orange;
+      scoreLabel = 'Medium';
+    } else {
+      scoreColor = Colors.red;
+      scoreLabel = 'Poor';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [scoreColor.shade400, scoreColor.shade600],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: scoreColor.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'Overall Security Score',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 150,
+                height: 150,
+                child: CircularProgressIndicator(
+                  value: score / 100,
+                  strokeWidth: 12,
+                  backgroundColor: Colors.white.withOpacity(0.3),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Colors.white,
+                  ),
+                ),
+              ),
+              Column(
+                children: [
+                  Text(
+                    '$score%',
+                    style: const TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    scoreLabel,
+                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            totalItems == 0
+                ? 'No items in vault yet.'
+                : flaggedItems == 0
+                    ? 'All passwords are secure!'
+                    : '$flaggedItems of $totalItems items need attention.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14, color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIssueCardFromData(Map<String, dynamic> issue) {
+    final check = issue['check'] ?? '';
+    final reason = issue['reason'] ?? '';
+    final title = issue['title'] ?? 'Unknown';
+    final type = issue['type'] ?? '';
+
+    // Determine severity based on check type
+    Color severityColor;
+    String severity;
+    IconData icon;
+
+    if (check.contains('hasPassword') || check.contains('cardExpiry')) {
+      severityColor = Colors.red;
+      severity = 'High';
+      icon = Icons.error;
+    } else if (check.contains('length') || check.contains('entropy')) {
+      severityColor = Colors.orange;
+      severity = 'Medium';
+      icon = Icons.warning;
+    } else {
+      severityColor = Colors.yellow.shade700;
+      severity = 'Low';
+      icon = Icons.info;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: _buildIssueCard(
+        title: '$title - $check',
+        description: reason,
+        severity: severity,
+        severityColor: severityColor,
+        icon: icon,
+        items: [],
       ),
     );
   }
@@ -251,27 +368,29 @@ class SecurityAuditScreen extends StatelessWidget {
               style: const TextStyle(fontSize: 14, color: Colors.black87),
             ),
           ),
-          const SizedBox(height: 12),
-          ...items.map(
-            (item) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: severityColor.withOpacity(0.2)),
+          if (items.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ...items.map(
+              (item) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: severityColor.withOpacity(0.2)),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.circle, size: 8, color: severityColor),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(item, style: const TextStyle(fontSize: 14)),
+                    ),
+                    TextButton(onPressed: () {}, child: const Text('Fix')),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.circle, size: 8, color: severityColor),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(item, style: const TextStyle(fontSize: 14)),
-                  ),
-                  TextButton(onPressed: () {}, child: const Text('Fix')),
-                ],
-              ),
             ),
-          ),
+          ],
         ],
       ),
     );
