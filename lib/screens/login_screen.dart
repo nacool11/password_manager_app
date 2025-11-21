@@ -80,7 +80,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const MainVaultScreen(),
+                        builder: (context) => MainVaultScreen(
+                          onThemeChanged: widget.onThemeChanged,
+                        ),
                       ),
                     );
                   } catch (e) {
@@ -253,7 +255,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const MainVaultScreen(),
+                      builder: (context) => MainVaultScreen(
+                        onThemeChanged: widget.onThemeChanged,
+                      ),
                     ),
                   );
                 } catch (e) {

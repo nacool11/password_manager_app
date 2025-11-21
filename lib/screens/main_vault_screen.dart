@@ -11,7 +11,9 @@ import 'security_audit_screen.dart';
 import 'settings_screen.dart';
 
 class MainVaultScreen extends StatefulWidget {
-  const MainVaultScreen({Key? key}) : super(key: key);
+  final Function(bool)? onThemeChanged;
+
+  const MainVaultScreen({Key? key, this.onThemeChanged}) : super(key: key);
 
   @override
   State<MainVaultScreen> createState() => _MainVaultScreenState();
@@ -89,7 +91,9 @@ class _MainVaultScreenState extends State<MainVaultScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
+                  builder: (context) => SettingsScreen(
+                    onThemeChanged: widget.onThemeChanged,
+                  ),
                 ),
               );
             },

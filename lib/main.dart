@@ -41,8 +41,10 @@ class _MyAppState extends State<MyApp> {
           primarySwatch: Colors.indigo,
         ),
 
-        home: LoginScreen(
-          onThemeChanged: updateTheme, // Pass callback
+        home: Builder(
+          builder: (context) => LoginScreen(
+            onThemeChanged: updateTheme, // Pass callback
+          ),
         ),
       ),
     );

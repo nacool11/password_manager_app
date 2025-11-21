@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/api_service.dart';
+import '../state/session_manager.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -13,8 +15,18 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _darkMode = false;
-  bool _largeFontMode = false;
+  @override
+  void initState() {
+    super.initState();
+    // Sync theme with current settings when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final session = context.read<SessionManager>();
+      if (session.settings.darkMode && widget.onThemeChanged != null) {
+        widget.onThemeChanged!(true);
+      }
+    });
+  }
 
   Widget _buildSettingsCard({
     required String title,
@@ -56,7 +68,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Keep local state; when user toggles dark mode we update the app via callback.
+    final session = context.watch<SessionManager>();
+    final settings = session.settings;
+    final settingsBusy = session.settingsSaving;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: Padding(
@@ -72,27 +87,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   secondary: const Icon(Icons.dark_mode),
                   title: const Text('Dark Mode'),
                   subtitle: const Text('Use dark theme'),
-                  value: _darkMode,
-                  onChanged: (value) {
-                    setState(() {
-                      _darkMode = value;
-                    });
-
-                    // Inform the app (main.dart) to change theme immediately.
-                    widget.onThemeChanged?.call(value);
-                  },
+                  value: settings.darkMode,
+                  onChanged: settingsBusy
+                      ? null
+                      : (value) async {
+                          // Update theme immediately via callback
+                          widget.onThemeChanged?.call(value);
+                          
+                          // Update settings in SessionManager (which saves to backend)
+                          final newSettings = settings.copyWith(darkMode: value);
+                          try {
+                            await session.updateSettings(newSettings);
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to save settings: ${e.toString()}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            // Revert theme change on error
+                            widget.onThemeChanged?.call(!value);
+                          }
+                        },
                 ),
                 SwitchListTile(
                   secondary: const Icon(Icons.format_size),
                   title: const Text('Large Font'),
                   subtitle: const Text('Increase font sizes'),
-                  value: _largeFontMode,
-                  onChanged: (value) {
-                    setState(() {
-                      _largeFontMode = value;
-                    });
-                    // Optionally: you could notify the app about font size changes similarly.
-                  },
+                  value: settings.largeFont,
+                  onChanged: settingsBusy
+                      ? null
+                      : (value) async {
+                          // Update settings in SessionManager (which saves to backend)
+                          final newSettings = settings.copyWith(largeFont: value);
+                          try {
+                            await session.updateSettings(newSettings);
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to save settings: ${e.toString()}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
                 ),
               ],
             ),
