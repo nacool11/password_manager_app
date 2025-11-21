@@ -9,7 +9,7 @@ const authRoutes = require('./routes/auth');
 const itemRoutes = require('./routes/items');
 const categoryRoutes = require('./routes/categories');
 const settingsRoutes = require('./routes/settings');
-
+const auditRoutes = require('./routes/audit');
 const app = express();
 
 app.use(cors());
@@ -28,12 +28,11 @@ connectDB(process.env.MONGO_URI || 'mongodb://localhost:27017/vault_db');
 
 // Api
 app.get('/', (req, res) => res.send('Vault backend running'));
-
+app.use('/api/audit', auditRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/settings', settingsRoutes);
-
 // error handler
 app.use((err, req, res, next) => {
   console.error('Unhandled error', err);
