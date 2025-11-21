@@ -113,10 +113,10 @@ class _MainVaultScreenState extends State<MainVaultScreen> {
                 const Spacer(),
                 IconButton(
                   tooltip: 'Refresh',
-                  onPressed: session.vaultLoading
+                  onPressed: session.loading
                       ? null
-                      : () => session.refreshVaultData(),
-                  icon: session.vaultLoading
+                      : () => session.loadVault(),
+                  icon: session.loading
                       ? const SizedBox(
                     width: 20,
                     height: 20,
@@ -129,7 +129,7 @@ class _MainVaultScreenState extends State<MainVaultScreen> {
             const SizedBox(height: 8),
             Expanded(
               child: RefreshIndicator(
-                onRefresh: () => session.refreshVaultData(),
+                onRefresh: () => session.loadVault(),
                 child: filteredItems.isEmpty
                     ? ListView(
                   children: const [
@@ -300,7 +300,7 @@ class _MainVaultScreenState extends State<MainVaultScreen> {
                 // IMPORTANT: delay the provider update until after dialog pops
                 Future.delayed(Duration(milliseconds: 50), () async {
                   try {
-                    await session.addCategory(value);
+                    await session.createCategory(name: value);
                   } catch (err) {
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
