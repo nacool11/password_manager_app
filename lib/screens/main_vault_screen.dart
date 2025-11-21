@@ -264,59 +264,31 @@ class _MainVaultScreenState extends State<MainVaultScreen> {
   }
 
   void _showAddCategoryDialog() {
-    final controller = TextEditingController();
-    final session = context.read<SessionManager>();
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
     showDialog(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Add Category'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Category Name'),
-            onSubmitted: (value) {
-              if (value.trim().isNotEmpty) {
-                Navigator.pop(dialogContext);
-                _createCategory(value.trim(), session, scaffoldMessenger);
-              }
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final value = controller.text.trim();
-                if (value.isEmpty) return;
-                Navigator.pop(dialogContext);
-                _createCategory(value, session, scaffoldMessenger);
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        );
-      },
-    ).then((_) {
-      // Dispose controller after dialog is closed
-      controller.dispose();
-    });
+      builder: (dialogContext) => _AddCategoryDialog(
+        onCategoryAdded: (name) {
+          // Close dialog first
+          Navigator.pop(dialogContext);
+          // Then create category using parent context
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _createCategory(name);
+            }
+          });
+        },
+      ),
+    );
   }
 
-  Future<void> _createCategory(
-    String name,
-    SessionManager session,
-    ScaffoldMessengerState scaffoldMessenger,
-  ) async {
+  Future<void> _createCategory(String name) async {
+    if (!mounted) return;
+    final session = context.read<SessionManager>();
     try {
       await session.createCategory(name: name);
     } catch (err) {
       if (!mounted) return;
-      scaffoldMessenger.showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(err.toString()),
           backgroundColor: Colors.red,
@@ -457,6 +429,65 @@ class _VaultDrawer extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AddCategoryDialog extends StatefulWidget {
+  final Function(String) onCategoryAdded;
+
+  const _AddCategoryDialog({required this.onCategoryAdded});
+
+  @override
+  State<_AddCategoryDialog> createState() => _AddCategoryDialogState();
+}
+
+class _AddCategoryDialogState extends State<_AddCategoryDialog> {
+  final _controller = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSubmit() async {
+    final value = _controller.text.trim();
+    if (value.isEmpty) return;
+
+    setState(() => _isLoading = true);
+    // Call the callback which will close dialog and create category
+    widget.onCategoryAdded(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add Category'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        enabled: !_isLoading,
+        decoration: const InputDecoration(labelText: 'Category Name'),
+        onSubmitted: (_) => _handleSubmit(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _handleSubmit,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Add'),
+        ),
+      ],
     );
   }
 }
