@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/settings_screen.dart';
+import 'state/session_manager.dart';
 
 void main() {
   runApp(const MyApp());
@@ -24,21 +26,24 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Vault App',
+    return ChangeNotifierProvider(
+      create: (_) => SessionManager(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Vault App',
 
-      // ADD THESE TWO
-      themeMode: _themeMode,
-      darkTheme: ThemeData.dark(),
+        // ADD THESE TWO
+        themeMode: _themeMode,
+        darkTheme: ThemeData.dark(),
 
-      theme: ThemeData(
-        brightness: Brightness.light,
-        primarySwatch: Colors.indigo,
-      ),
+        theme: ThemeData(
+          brightness: Brightness.light,
+          primarySwatch: Colors.indigo,
+        ),
 
-      home: LoginScreen(
-        onThemeChanged: updateTheme, // Pass callback
+        home: LoginScreen(
+          onThemeChanged: updateTheme, // Pass callback
+        ),
       ),
     );
   }

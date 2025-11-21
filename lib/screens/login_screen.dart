@@ -80,9 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => MainVaultScreen(
-                          onThemeChanged: widget.onThemeChanged,
-                        ),
+                        builder: (context) => const MainVaultScreen(),
                       ),
                     );
                   } catch (e) {

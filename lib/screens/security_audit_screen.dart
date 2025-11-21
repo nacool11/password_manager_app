@@ -167,7 +167,7 @@ class _SecurityAuditScreenState extends State<SecurityAuditScreen> {
     final totalItems = summary['totalItems'] ?? 0;
     final flaggedItems = summary['flaggedItems'] ?? 0;
 
-    Color scoreColor;
+    MaterialColor scoreColor;
     String scoreLabel;
     if (score >= 70) {
       scoreColor = Colors.green;

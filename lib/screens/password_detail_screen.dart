@@ -4,15 +4,18 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../models/vault_item.dart';
 
 class PasswordDetailScreen extends StatefulWidget {
   final String siteName;
   final String username;
+  final VaultItem? item;
 
   const PasswordDetailScreen({
     Key? key,
-    required this.siteName,
-    required this.username,
+    this.siteName = '',
+    this.username = '',
+    this.item,
   }) : super(key: key);
 
   @override
@@ -21,8 +24,35 @@ class PasswordDetailScreen extends StatefulWidget {
 
 class _PasswordDetailScreenState extends State<PasswordDetailScreen> {
   bool _showPassword = false;
-  final String _password = 'MySecureP@ssw0rd123';
-  final String _url = 'https://google.com';
+  
+  String get _password {
+    if (widget.item?.data != null) {
+      return widget.item!.data!['password']?.toString() ?? 
+             widget.item!.data!['pass']?.toString() ?? 
+             '••••••••';
+    }
+    return '••••••••';
+  }
+  
+  String get _url {
+    if (widget.item?.data != null) {
+      return widget.item!.data!['url']?.toString() ?? '';
+    }
+    return '';
+  }
+  
+  String get _siteName {
+    return widget.siteName.isNotEmpty 
+        ? widget.siteName 
+        : (widget.item?.title ?? 'Password');
+  }
+  
+  String get _username {
+    return widget.username.isNotEmpty 
+        ? widget.username 
+        : (widget.item?.data?['username']?.toString() ?? 
+           widget.item?.data?['email']?.toString() ?? '');
+  }
 
   void _showSecurityDialog() {
     // Removed OTP and master password requirement - just toggle password visibility
@@ -46,7 +76,7 @@ class _PasswordDetailScreenState extends State<PasswordDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.siteName),
+        title: Text(_siteName),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -77,9 +107,9 @@ class _PasswordDetailScreenState extends State<PasswordDetailScreen> {
             const SizedBox(height: 32),
             _buildDetailCard(
               label: 'Username',
-              value: widget.username,
+              value: _username,
               icon: Icons.person,
-              onCopy: () => _copyToClipboard(widget.username, 'Username'),
+              onCopy: () => _copyToClipboard(_username, 'Username'),
             ),
             const SizedBox(height: 16),
             _buildDetailCard(
@@ -239,7 +269,7 @@ class _PasswordDetailScreenState extends State<PasswordDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Password'),
-        content: Text('Are you sure you want to delete ${widget.siteName}?'),
+        content: Text('Are you sure you want to delete $_siteName?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

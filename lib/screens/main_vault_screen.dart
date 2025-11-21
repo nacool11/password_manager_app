@@ -192,7 +192,10 @@ class _MainVaultScreenState extends State<MainVaultScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      CreditCardDetailScreen(item: item),
+                                      CreditCardDetailScreen(
+                                        cardName: item.title,
+                                        item: item,
+                                      ),
                                 ),
                               );
                             } else {
@@ -200,7 +203,11 @@ class _MainVaultScreenState extends State<MainVaultScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      PasswordDetailScreen(item: item),
+                                      PasswordDetailScreen(
+                                        siteName: item.title,
+                                        username: item.data?['username']?.toString() ?? '',
+                                        item: item,
+                                      ),
                                 ),
                               );
                             }

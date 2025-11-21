@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../models/vault_item.dart';
 
 class CreditCardDetailScreen extends StatefulWidget {
   final String cardName;
+  final VaultItem? item;
 
-  const CreditCardDetailScreen({Key? key, required this.cardName})
-    : super(key: key);
+  const CreditCardDetailScreen({
+    Key? key,
+    this.cardName = '',
+    this.item,
+  }) : super(key: key);
 
   @override
   State<CreditCardDetailScreen> createState() => _CreditCardDetailScreenState();
@@ -14,10 +19,41 @@ class CreditCardDetailScreen extends StatefulWidget {
 class _CreditCardDetailScreenState extends State<CreditCardDetailScreen> {
   bool _showCardNumber = false;
   bool _showCVV = false;
-  final String _cardholderName = 'John Doe';
-  final String _cardNumber = '4532 1234 5678 1234';
-  final String _expiry = '12/28';
-  final String _cvv = '123';
+  
+  String get _cardholderName {
+    if (widget.item?.data != null) {
+      return widget.item!.data!['cardholderName']?.toString() ?? '';
+    }
+    return '';
+  }
+  
+  String get _cardNumber {
+    if (widget.item?.data != null) {
+      return widget.item!.data!['cardNumber']?.toString() ?? '';
+    }
+    return '';
+  }
+  
+  String get _expiry {
+    if (widget.item?.data != null) {
+      return widget.item!.data!['expiry']?.toString() ?? 
+             widget.item!.data!['exp']?.toString() ?? '';
+    }
+    return '';
+  }
+  
+  String get _cvv {
+    if (widget.item?.data != null) {
+      return widget.item!.data!['cvv']?.toString() ?? '';
+    }
+    return '';
+  }
+  
+  String get _cardName {
+    return widget.cardName.isNotEmpty 
+        ? widget.cardName 
+        : (widget.item?.title ?? 'Credit Card');
+  }
 
   void _copyToClipboard(String text, String label) {
     Clipboard.setData(ClipboardData(text: text));
@@ -34,7 +70,7 @@ class _CreditCardDetailScreenState extends State<CreditCardDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.cardName),
+        title: Text(_cardName),
         backgroundColor: Colors.green,
         actions: [IconButton(icon: const Icon(Icons.edit), onPressed: () {})],
       ),
@@ -307,7 +343,7 @@ class _CreditCardDetailScreenState extends State<CreditCardDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Card'),
-        content: Text('Are you sure you want to delete ${widget.cardName}?'),
+        content: Text('Are you sure you want to delete $_cardName?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
