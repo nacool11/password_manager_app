@@ -263,61 +263,66 @@ class _MainVaultScreenState extends State<MainVaultScreen> {
         'Password';
   }
 
-  // ---------------------------
-  //   FIXED VERSION — NO CRASH
-  // ---------------------------
   void _showAddCategoryDialog() {
     final controller = TextEditingController();
     final session = context.read<SessionManager>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Add Category'),
           content: TextField(
             controller: controller,
             autofocus: true,
             decoration: const InputDecoration(labelText: 'Category Name'),
+            onSubmitted: (value) {
+              if (value.trim().isNotEmpty) {
+                Navigator.pop(dialogContext);
+                _createCategory(value.trim(), session, scaffoldMessenger);
+              }
+            },
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                controller.dispose();
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () async {
+              onPressed: () {
                 final value = controller.text.trim();
                 if (value.isEmpty) return;
-
-                controller.dispose();  // dispose early (safe)
-
-                Navigator.pop(context);   // close dialog BEFORE updating provider
-
-                // IMPORTANT: delay the provider update until after dialog pops
-                Future.delayed(Duration(milliseconds: 50), () async {
-                  try {
-                    await session.createCategory(name: value);
-                  } catch (err) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(err.toString()),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                });
+                Navigator.pop(dialogContext);
+                _createCategory(value, session, scaffoldMessenger);
               },
               child: const Text('Add'),
             ),
           ],
         );
       },
-    );
+    ).then((_) {
+      // Dispose controller after dialog is closed
+      controller.dispose();
+    });
+  }
+
+  Future<void> _createCategory(
+    String name,
+    SessionManager session,
+    ScaffoldMessengerState scaffoldMessenger,
+  ) async {
+    try {
+      await session.createCategory(name: name);
+    } catch (err) {
+      if (!mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(err.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
 
