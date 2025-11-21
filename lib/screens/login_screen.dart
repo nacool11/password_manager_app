@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'main_vault_screen.dart';
 import 'recovery_screen.dart';
+import '../services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   // This callback is provided by main.dart and will be forwarded
@@ -17,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _usernameController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -58,22 +60,55 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 18),
               ElevatedButton(
-                onPressed: () {
-                  // TODO: Validate credentials
-                  // For now, go straight to the vault screen and forward theme callback.
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MainVaultScreen(
-                        onThemeChanged: widget.onThemeChanged,
+                onPressed: _isLoading ? null : () async {
+                  if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please enter email and password'),
+                        backgroundColor: Colors.red,
                       ),
-                    ),
-                  );
+                    );
+                    return;
+                  }
+                  setState(() => _isLoading = true);
+                  try {
+                    await ApiService.login(
+                      _usernameController.text.trim(),
+                      _passwordController.text.trim(),
+                    );
+                    if (!mounted) return;
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MainVaultScreen(
+                          onThemeChanged: widget.onThemeChanged,
+                        ),
+                      ),
+                    );
+                  } catch (e) {
+                    if (!mounted) return;
+                    setState(() => _isLoading = false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(e.toString().replaceAll('Exception: ', '')),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  child: Text('Login'),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        child: Text('Login'),
+                      ),
               ),
               TextButton(
                 onPressed: () {
@@ -85,12 +120,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 },
                 child: const Text('Forgot password?'),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Demo account: any credentials will navigate to the vault (no auth in demo).',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
               ),
             ],
           ),

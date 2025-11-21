@@ -148,6 +148,22 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> getItem(String id) async {
+    final response = await _handleRequest(() async {
+      return await http.get(
+        Uri.parse('$baseUrl/items/$id'),
+        headers: await _getHeaders(needsAuth: true),
+      );
+    });
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final error = jsonDecode(response.body);
+      throw Exception(error['message'] ?? 'Failed to get item');
+    }
+  }
+
   static Future<Map<String, dynamic>> createItem({
     required String title,
     String? subtitle,
